@@ -1,0 +1,14 @@
+node_modules/
+frontend/node_modules/
+server/node_modules/
+tmp_pdf_reader/node_modules/
+dist/
+frontend/dist/
+.DS_Store
+.env
+gcloud auth login/
+pdf_content.txt
+*.log
+venv/
+tmp_pdf_reader/venv/
+Election process education initial requirements.pdf

@@ -1,0 +1,13 @@
+node_modules
+frontend/node_modules
+server/node_modules
+dist
+frontend/dist
+.git
+.gitignore
+README.md
+.DS_Store
+gcloud auth login
+tmp_pdf_reader
+pdf_content.txt
+Election process education initial requirements.pdf

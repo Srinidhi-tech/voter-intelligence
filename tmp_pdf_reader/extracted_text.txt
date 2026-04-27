@@ -1,0 +1,163 @@
+ I would like to build a website 
+containing 8 major 
+implimentations,    
+Requirement-1:The website should tell about the 
+registration or this  requirement I thought to keep a 
+popup which ask for 18 or new to  register or existing 
+voter id . this should be there in my website The 
+Process: •You need to ﬁll Form 6 — this is the application to get added to the Electoral Roll (voter list)
+•You submit it on NVSP (National Voters' Service Portal) — voters.eci.gov.in
+•After veriﬁcation, you get a EPIC card (Voter ID card)
+•If you move to a new city → you need Form 6 again for the new address
+•If you want to correct details → Form 8
+•If you want to delete a dead person's name → Form 7.
+ I want a dropdown or suggestion in that perticular section for registring to it via orirginal 
+website for voter id and steps to complete the process. this should have regional 
+language option for displaying the process and information as well as guide to complete 
+process with the original link for the process directing to portal, i thought of adding ai 
+generated step by step guide video which is available in all language for guideance and 
+reference.  
+Requirement-2 :How EVMs and VVPAT's work ,The 
+Concept: 
+EVM (Electronic Voting Machine): ◦A simple electronic device with candidate buttons
+◦Has two units — Control Unit (with polling oﬃcer) and Balloting Unit (where you press the 
+button)
+◦Once you press a candidate's button, your vote is locked in
+◦It is a standalone device — not connected to internet or any network, so it literally cannot be 
+hacked remotely
+•VVPAT (Voter Veriﬁable Paper Audit Trail):
+◦A printer-like machine attached to EVM
+◦After you press the button, a paper slip prints showing the candidate's name, symbol and 
+party
+◦You can see it through a glass window for 7 seconds
+◦Then it auto-cuts and falls into a sealed box
+◦This is proof that your vote was recorded correctly
+This section should explain all these to the user to educate and can also have ai video 
+describing this process. 
+ Requiremnt-3:   Who Are the Candidates — How to 
+Research 
+The Problem: Most voters, especially in rural areas, vote 
+based on caste, religion or money — not on the 
+candidate's actual background or track record. 
+The Concept: ◦Every candidate contesting an election must ﬁle an aﬃdavit declaring their criminal record, 
+assets, liabilities and education
+◦This is publicly available on MyNeta.info and the ECI website
+◦Voters have the right to know if their candidate has criminal cases pending
+•What voters don't know:
+◦This information exists and is free to access
+◦They can compare candidates before voting
+◦They can check if a candidate delivered on past promises this should be the main infromation.
+In this requirement , in this i wanted to demonstrate some examples in picture or 
+video format which tells about , by just considering religion caste or by taking money 
+by any of these reasons if they vote this may lead to bad results of choosing wrong 
+candidate. there should be explanation for not choosing the person with criminal 
+cases and a href link which will lead to the myneta.info and eci website and also live 
+tracker of trackiing the promises he listed and promises he fulﬁlled showing the 
+current status and promises he didnt fulﬁll, if he is new candidate coonsider he 
+political party promisises fullﬁll  in that region as well as the state and contribution 
+and development made all over the country  and bullet points highlighting what are 
+the points to verify the candiddates and process and link to websites to verify and an 
+ai video describing the process it must able translate to any regional language in 
+India based on a;ll these analysis saying the candidate's eligibilty to vote it can have 
+a search bar with voice mail to search perticular candidate , that will be handled by 
+fetching the candidates background from the myneta.info and eco website and can 
+fetch the promises  fulﬁlled by diﬀerent resources and list them out . Can also fetch 
+the allegations and protests made against the candidates and analyse and tell which 
+are true and which are false allegations. By fetching all the data voter should be able 
+to decide to vote perticular candidates or not.
+Requirement-4: 
+What Happens on Election Day — Step by Step 
+The Problem: First-time voters are nervous and confused about what to actually do at the polling 
+booth.
+The Process: 
+1.Check your polling booth address (on your voter ID or NVSP portal)
+2.Carry your Voter ID or any of 12 approved ID proofs (Aadhaar, passport, PAN etc.)
+3.Go to the booth in your designated time slot
+4.Your name is checked in the electoral roll by the oﬃcer
+5.Your ﬁnger gets ink marked (to prevent double voting)
+6.You get a slip and go to the Balloting Unit
+7.Press the button next to your chosen candidate
+8.VVPAT shows the paper slip for 7 seconds
+9.A beep conﬁrms your vote is recorded
+10.You leave — done!
+This should be displayed and I want ai  generated video highlighting the voter pressing the 
+right candidate button .
+
+Requirement-5: 
+Rights as a Voter 
+The Problem: Most voters don't know they have legal rights at the polling booth.
+Key rights people don't know about: 
+•Right to secret ballot — nobody can force you to reveal who you voted for
+•NOTA (None of the Above) — you can reject ALL candidates if you don't like any
+•Right to not be denied voting — even if your name has a spelling error, oﬃcers must help you
+•Right to assistance — disabled/elderly voters can bring a companion to help
+•Right to complain — if someone oﬀers you money for vote, you can report it on cVIGIL app
+These points should be also highlighted and warn voters , if anyone forcing or giving money 
+to vote should consider them as unﬁt candidates who is trying to scam people . Can add 
+posters refusing taking money , complaining the violations happening. 
+Requirement-6: 
+How Votes Are Counted and Results Declared 
+The Problem: People watch news on result day but don't understand how the process actually 
+works.
+The Process: 
+1.After polling ends, EVMs are sealed and stored in a strongroom with security
+2.On counting day, EVMs are brought to the counting center
+3.VVPAT slips from randomly selected booths are counted and matched with EVM data
+4.Votes are counted round by round, each round covering a few booths
+5.Running totals are announced after each round
+6.Candidate with the highest votes wins (simple plurality — not majority needed)
+7.The Returning Oﬃcer oﬃcially declares the winner
+8.Results are published on the ECI website in real time .
+ This can also be showcased in beautiful way explaining the abstract process of result 
+declaration. 
+Requirement -7: 
+Misinformation and Fake News Around Elections 
+The Problem: WhatsApp forwards, fake news sites and social media spread false information 
+like:
+•"EVMs are hacked"
+•"Your vote wasn't counted"
+•"Voting for X party will get you arrested"
+•Fake polling dates and booth addresses
+The Impact: 
+•People don't vote based on false fear
+•Communal tension is created
+•Trust in democracy breaks down
+What exists to ﬁght it: 
+•Fact-checking portals like BOOM, AltNews
+•ECI's oﬃcial social media for correct information
+•cVIGIL app for reporting violations in real time
+ Also explaining making aware that evm’s cannot be hacked ,every vote is considered, no 
+one can harm if that perticular candidate is not voted and incase come across fake news 
+people can check that from mint.info or this website. 
+There should be a dashboard where people can post the fake news about the candidate 
+and cross check them weather it is true or not, there should be a bot or ai working which 
+can go fetch the actual information and checking if the allegations are true or not. 
+There should also be a section where people can post complaints incase anyone harming 
+for not voting this should directly go to the media and perticular government departments. 
+Website should display the actual dates of polling and make them aware of fake dates 
+spread. 
+Requirement-8: 
+Model Code of Conduct (MCC) 
+The Problem: People don't know what political parties and candidates are legally allowed to do 
+during elections — so they can't identify violations.
+What is MCC: 
+•A set of guidelines issued by the Election Commission of India the moment election dates are 
+announced
+•It stays in force until results are declared
+Key rules under MCC: 
+•Government cannot announce new schemes or policies (to prevent vote buying with public 
+money)
+•No religious or caste-based campaigning
+•Candidate cannot bribe voters with cash, gifts or liquor
+•Political rallies need permission from local authorities
+•24 hours before polling — all campaigning must stop (called campaign silence period)
+•Government machinery (vehicles, buildings) cannot be used for campaigning
+These rules must be listed properly ,incase of violation of any rules the action and complain 
+to the portal link should be within this section.  
+I want a section named templates where people can use the ready made format by just 
+including the name of politician and party this =should useful for busy schedule and the one 
+who in unaware to mail format or unaware how to deliver the message .It can be in all major 
+Indian languages , instruction to ﬁle the complaint using  templates and that typed message 
+can be translated to English immediately and by clicking the submit button it should 
+translate to English and then send it to the required portal and to media . 
+
