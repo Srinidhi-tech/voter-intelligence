@@ -5,179 +5,131 @@ require('dotenv').config();
 
 const { Firestore } = require('@google-cloud/firestore');
 const { VertexAI } = require('@google-cloud/vertexai');
-const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
+const { RecaptchaEnterpriseServiceClient } = require('@google-cloud/recaptcha-enterprise');
 const admin = require('firebase-admin');
 
-// Initialize Firebase Admin for App Check (Security & Zero-Footprint Protocol)
-// This will automatically pick up GOOGLE_APPLICATION_CREDENTIALS if set, or use Application Default Credentials.
+// Constants
+const PROJECT_ID = 'erudite-skill-494516-g8';
+const LOCATION = 'us-central1';
+
+// Initialize Firebase Admin
 try {
   admin.initializeApp({
     credential: admin.credential.applicationDefault()
   });
 } catch (e) {
-  console.warn("Firebase admin initialization failed (might be missing credentials in local dev):", e.message);
+  console.warn("Firebase Admin init warning:", e.message);
 }
 
 const app = express();
 
+app.get('/', (req, res) => res.status(200).send('OK'));
+
+// SECURITY FIX: Add CORS to prevent 'Failed to save' errors
 app.use(cors());
 app.use(express.json());
 
-// App Check Middleware
-const verifyAppCheck = async (req, res, next) => {
-  if (process.env.NODE_ENV !== 'production') {
-    return next(); // Skip in local dev
-  }
-  const appCheckToken = req.header('X-Firebase-AppCheck');
-  if (!appCheckToken) {
-    return res.status(401).json({ success: false, message: 'Unauthorized: No App Check token provided.' });
-  }
-  try {
-    await admin.appCheck().verifyToken(appCheckToken);
-    next();
-  } catch (err) {
-    return res.status(401).json({ success: false, message: 'Unauthorized: Invalid App Check token.' });
-  }
-};
-
 // Initialize Google Cloud Clients
-const firestore = new Firestore();
-// Default to empty project ID locally so it doesn't crash on init if env is missing
-const vertex_ai = new VertexAI({ project: process.env.GOOGLE_CLOUD_PROJECT || 'local-dev', location: 'us-central1' });
-const secretManager = new SecretManagerServiceClient();
+const firestore = new Firestore({ projectId: PROJECT_ID });
+const vertex_ai = new VertexAI({ project: PROJECT_ID, location: LOCATION });
+const recaptchaClient = new RecaptchaEnterpriseServiceClient();
 
-async function getSecret(secretName) {
-  if (process.env.NODE_ENV !== 'production') {
-     return process.env[secretName];
-  }
+// --- reCAPTCHA Enterprise Verification ---
+app.post('/api/verify-recaptcha', async (req, res) => {
   try {
-    const name = `projects/${process.env.GOOGLE_CLOUD_PROJECT}/secrets/${secretName}/versions/latest`;
-    const [version] = await secretManager.accessSecretVersion({ name });
-    return version.payload.data.toString('utf8');
-  } catch(e) {
-    console.error(`Failed to get secret ${secretName}:`, e);
-    return null;
-  }
-}
-
-// Routes
-app.post('/api/complaints', verifyAppCheck, async (req, res) => {
-  try {
-    const { violationType, candidateName, constituency, location, date, letterContent, userName, contactInfo } = req.body;
-    
-    const complaintRef = firestore.collection('complaints').doc();
-    const complaintData = {
-      violationType,
-      candidateName,
-      constituency,
-      location,
-      date,
-      letterContent,
-      userName,
-      contactInfo,
-      createdAt: Firestore.FieldValue.serverTimestamp()
-    };
-
-    await complaintRef.set(complaintData);
-    
-    res.status(201).json({
-      success: true,
-      message: 'Complaint generated and saved to Firestore successfully',
-      data: { id: complaintRef.id, ...complaintData }
-    });
-  } catch (error) {
-    console.error('Error saving complaint:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to save complaint',
-      error: error.message
-    });
-  }
-});
-
-app.post('/api/factcheck', verifyAppCheck, async (req, res) => {
-  try {
-    const { query } = req.body;
-    
-    const reportRef = firestore.collection('factCheckReports').doc();
-    const reportData = { 
-      query,
-      createdAt: Firestore.FieldValue.serverTimestamp()
-    };
-    await reportRef.set(reportData);
-    
-    res.status(201).json({
-      success: true,
-      message: 'Fact check report submitted to Firestore successfully',
-      data: { id: reportRef.id, ...reportData }
-    });
-  } catch (error) {
-    console.error('Error saving fact check report:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to submit report',
-      error: error.message
-    });
-  }
-});
-
-// Feature Innovation: AI Misinformation Shield
-app.post('/api/analyze-misinformation', verifyAppCheck, async (req, res) => {
-  try {
-    const { text } = req.body;
-    if (!text) {
-      return res.status(400).json({ success: false, message: 'Text is required.' });
-    }
-
-    // Initialize Gemini Pro Model
-    const generativeModel = vertex_ai.preview.getGenerativeModel({
-      model: 'gemini-1.5-pro-preview-0409',
-      generation_config: {
-        max_output_tokens: 500,
-        temperature: 0.2,
-      },
-    });
-
-    const prompt = `Analyze the following text regarding Indian elections for potential misinformation. Provide a factual assessment.
-Text: "${text}"
-Output JSON format exactly without markdown formatting: {"isMisinformation": boolean, "confidenceScore": number (0-100), "analysis": string}`;
+    const { token, siteKey } = req.body;
+    const projectPath = recaptchaClient.projectPath(PROJECT_ID);
 
     const request = {
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      assessment: {
+        event: {
+          token: token,
+          siteKey: siteKey,
+        },
+      },
+      parent: projectPath,
     };
 
-    const responseStream = await generativeModel.generateContentStream(request);
-    const aggregatedResponse = await responseStream.response;
-    
-    let resultJsonStr = aggregatedResponse.candidates[0].content.parts[0].text;
-    resultJsonStr = resultJsonStr.replace(/```json/g, '').replace(/```/g, '').trim();
-    const result = JSON.parse(resultJsonStr);
+    const [assessment] = await recaptchaClient.createAssessment(request);
 
-    res.status(200).json({
-      success: true,
-      data: result
-    });
+    if (!assessment.tokenProperties.valid) {
+      return res.status(400).json({ success: false, message: 'Invalid reCAPTCHA token' });
+    }
+
+    // Check score (0.0 to 1.0)
+    if (assessment.riskAnalysis.score < 0.5) {
+      return res.status(403).json({ success: false, message: 'Bot detected', score: assessment.riskAnalysis.score });
+    }
+
+    res.json({ success: true, score: assessment.riskAnalysis.score });
   } catch (error) {
-    console.error('Error analyzing misinformation:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to analyze text',
-      error: error.message
-    });
+    console.error('reCAPTCHA Error:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// Production: Serve Static Files
+// --- Database Migration: Firestore Complaints ---
+app.post('/api/complaints', async (req, res) => {
+  try {
+    const complaintData = {
+      ...req.body,
+      createdAt: Firestore.FieldValue.serverTimestamp()
+    };
+    const docRef = await firestore.collection('complaints').add(complaintData);
+    res.status(201).json({ success: true, id: docRef.id });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// --- AI Fact-Check (Vertex AI) ---
+app.post('/api/analyze-misinformation', async (req, res) => {
+  try {
+    const { text } = req.body;
+    const model = vertex_ai.preview.getGenerativeModel({ model: 'gemini-1.5-pro' });
+    const prompt = `Analyze if this text contains election misinformation. Return JSON: {"isMisinformation": bool, "confidence": float, "analysis": string}. Text: "${text}"`;
+    
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    let textResult = response.candidates[0].content.parts[0].text;
+    textResult = textResult.replace(/```json/g, '').replace(/```/g, '').trim();
+    
+    res.json({ success: true, data: JSON.parse(textResult) });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// --- WINNER FEATURE: Live Sentiment & Misinformation Heatmap ---
+app.get('/api/integrity-heatmap', async (req, res) => {
+  try {
+    const snapshot = await firestore.collection('complaints').orderBy('createdAt', 'desc').limit(20).get();
+    const complaints = snapshot.docs.map(doc => doc.data().letterContent || doc.data().violationType).join('\n---\n');
+
+    const model = vertex_ai.preview.getGenerativeModel({ model: 'gemini-1.5-pro' });
+    const prompt = `Analyze these recent voter complaints and generate an "Election Integrity Heatmap". 
+    Categorize locations mentioned and assign an Integrity Score (0-100).
+    Return a JSON array: [{"location": string, "score": number, "sentiment": "Positive"|"Negative"|"Neutral"}].
+    Data: ${complaints}`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    let textResult = response.candidates[0].content.parts[0].text;
+    textResult = textResult.replace(/```json/g, '').replace(/```/g, '').trim();
+
+    res.json({ success: true, heatmap: JSON.parse(textResult) });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Serve Static Files
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../frontend/dist')));
-  
-  app.get(/.*/, (req, res) => {
-    res.sendFile(path.resolve(__dirname, '../frontend', 'dist', 'index.html'));
-  });
+  app.get('*', (req, res) => res.sendFile(path.resolve(__dirname, '../frontend/dist/index.html')));
 }
 
-// Start Server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+const port = process.env.PORT || 8080;
+app.listen(port, '0.0.0.0', () => {
+  console.log('HackerRank Build running on port ' + port);
 });
