@@ -1,31 +1,72 @@
 const path = require('path');
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
 
-const Complaint = require('./models/Complaint');
-const FactCheckReport = require('./models/FactCheckReport');
+const { Firestore } = require('@google-cloud/firestore');
+const { VertexAI } = require('@google-cloud/vertexai');
+const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
+const admin = require('firebase-admin');
+
+// Initialize Firebase Admin for App Check (Security & Zero-Footprint Protocol)
+// This will automatically pick up GOOGLE_APPLICATION_CREDENTIALS if set, or use Application Default Credentials.
+try {
+  admin.initializeApp({
+    credential: admin.credential.applicationDefault()
+  });
+} catch (e) {
+  console.warn("Firebase admin initialization failed (might be missing credentials in local dev):", e.message);
+}
 
 const app = express();
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// MongoDB Connection
-const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/election-edu';
+// App Check Middleware
+const verifyAppCheck = async (req, res, next) => {
+  if (process.env.NODE_ENV !== 'production') {
+    return next(); // Skip in local dev
+  }
+  const appCheckToken = req.header('X-Firebase-AppCheck');
+  if (!appCheckToken) {
+    return res.status(401).json({ success: false, message: 'Unauthorized: No App Check token provided.' });
+  }
+  try {
+    await admin.appCheck().verifyToken(appCheckToken);
+    next();
+  } catch (err) {
+    return res.status(401).json({ success: false, message: 'Unauthorized: Invalid App Check token.' });
+  }
+};
 
-mongoose.connect(MONGO_URI)
-  .then(() => console.log('MongoDB connected successfully'))
-  .catch(err => console.error('MongoDB connection error:', err));
+// Initialize Google Cloud Clients
+const firestore = new Firestore();
+// Default to empty project ID locally so it doesn't crash on init if env is missing
+const vertex_ai = new VertexAI({ project: process.env.GOOGLE_CLOUD_PROJECT || 'local-dev', location: 'us-central1' });
+const secretManager = new SecretManagerServiceClient();
+
+async function getSecret(secretName) {
+  if (process.env.NODE_ENV !== 'production') {
+     return process.env[secretName];
+  }
+  try {
+    const name = `projects/${process.env.GOOGLE_CLOUD_PROJECT}/secrets/${secretName}/versions/latest`;
+    const [version] = await secretManager.accessSecretVersion({ name });
+    return version.payload.data.toString('utf8');
+  } catch(e) {
+    console.error(`Failed to get secret ${secretName}:`, e);
+    return null;
+  }
+}
 
 // Routes
-app.post('/api/complaints', async (req, res) => {
+app.post('/api/complaints', verifyAppCheck, async (req, res) => {
   try {
     const { violationType, candidateName, constituency, location, date, letterContent, userName, contactInfo } = req.body;
     
-    const newComplaint = new Complaint({
+    const complaintRef = firestore.collection('complaints').doc();
+    const complaintData = {
       violationType,
       candidateName,
       constituency,
@@ -33,15 +74,16 @@ app.post('/api/complaints', async (req, res) => {
       date,
       letterContent,
       userName,
-      contactInfo
-    });
+      contactInfo,
+      createdAt: Firestore.FieldValue.serverTimestamp()
+    };
 
-    const savedComplaint = await newComplaint.save();
+    await complaintRef.set(complaintData);
     
     res.status(201).json({
       success: true,
-      message: 'Complaint generated and saved successfully',
-      data: savedComplaint
+      message: 'Complaint generated and saved to Firestore successfully',
+      data: { id: complaintRef.id, ...complaintData }
     });
   } catch (error) {
     console.error('Error saving complaint:', error);
@@ -53,23 +95,73 @@ app.post('/api/complaints', async (req, res) => {
   }
 });
 
-app.post('/api/factcheck', async (req, res) => {
+app.post('/api/factcheck', verifyAppCheck, async (req, res) => {
   try {
     const { query } = req.body;
     
-    const newReport = new FactCheckReport({ query });
-    const savedReport = await newReport.save();
+    const reportRef = firestore.collection('factCheckReports').doc();
+    const reportData = { 
+      query,
+      createdAt: Firestore.FieldValue.serverTimestamp()
+    };
+    await reportRef.set(reportData);
     
     res.status(201).json({
       success: true,
-      message: 'Fact check report submitted successfully',
-      data: savedReport
+      message: 'Fact check report submitted to Firestore successfully',
+      data: { id: reportRef.id, ...reportData }
     });
   } catch (error) {
     console.error('Error saving fact check report:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to submit report',
+      error: error.message
+    });
+  }
+});
+
+// Feature Innovation: AI Misinformation Shield
+app.post('/api/analyze-misinformation', verifyAppCheck, async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text) {
+      return res.status(400).json({ success: false, message: 'Text is required.' });
+    }
+
+    // Initialize Gemini Pro Model
+    const generativeModel = vertex_ai.preview.getGenerativeModel({
+      model: 'gemini-1.5-pro-preview-0409',
+      generation_config: {
+        max_output_tokens: 500,
+        temperature: 0.2,
+      },
+    });
+
+    const prompt = `Analyze the following text regarding Indian elections for potential misinformation. Provide a factual assessment.
+Text: "${text}"
+Output JSON format exactly without markdown formatting: {"isMisinformation": boolean, "confidenceScore": number (0-100), "analysis": string}`;
+
+    const request = {
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    };
+
+    const responseStream = await generativeModel.generateContentStream(request);
+    const aggregatedResponse = await responseStream.response;
+    
+    let resultJsonStr = aggregatedResponse.candidates[0].content.parts[0].text;
+    resultJsonStr = resultJsonStr.replace(/```json/g, '').replace(/```/g, '').trim();
+    const result = JSON.parse(resultJsonStr);
+
+    res.status(200).json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    console.error('Error analyzing misinformation:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to analyze text',
       error: error.message
     });
   }

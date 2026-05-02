@@ -34,6 +34,10 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
         <div 
           className="fixed inset-0 z-40 bg-black/50 lg:hidden"
           onClick={toggleSidebar}
+          onKeyDown={(e) => e.key === 'Escape' && toggleSidebar()}
+          role="button"
+          tabIndex={0}
+          aria-label="Close sidebar"
         />
       )}
       
@@ -41,6 +45,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
         initial={{ x: -280 }}
         animate={{ x: isOpen ? 0 : -280 }}
         className={`fixed inset-y-0 left-0 z-50 w-72 bg-democracy-dark border-r border-democracy-slate flex flex-col transform transition-transform duration-300 lg:translate-x-0 lg:static lg:inset-0`}
+        aria-label="Main Navigation"
       >
         <div className="flex items-center justify-center h-20 border-b border-democracy-slate px-6">
           <h1 className="text-xl font-bold text-democracy-gold tracking-wider">
@@ -48,7 +53,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
           </h1>
         </div>
 
-        <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
+        <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto" role="navigation" aria-label="Sidebar Menu">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             return (

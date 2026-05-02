@@ -12,3 +12,11 @@ pdf_content.txt
 venv/
 tmp_pdf_reader/venv/
 Election process education initial requirements.pdf
+*.pem
+*key*.json
+*credentials*.json
+*service-account*.json
+coverage/
+.firebase/
+
+submission.zip
