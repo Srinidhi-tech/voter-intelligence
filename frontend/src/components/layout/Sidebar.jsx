@@ -9,9 +9,11 @@ import {
   Scale, 
   BarChart4, 
   ShieldAlert, 
-  Gavel 
+  Gavel,
+  Map
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { speak } from '../../App';
 
 const NAV_ITEMS = [
   { path: '/registration', icon: FileText, labelKey: 'nav.registration' },
@@ -22,6 +24,7 @@ const NAV_ITEMS = [
   { path: '/results', icon: BarChart4, labelKey: 'nav.results' },
   { path: '/fact-check', icon: ShieldAlert, labelKey: 'nav.fact_check' },
   { path: '/complaints', icon: Gavel, labelKey: 'nav.complaints' },
+  { path: '/heatmap', icon: Map, labelKey: 'Integrity Heatmap' },
 ];
 
 export default function Sidebar({ isOpen, toggleSidebar }) {
@@ -67,6 +70,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
                       : 'text-democracy-light/70 hover:bg-democracy-slate/50 hover:text-democracy-light'
                   }`
                 }
+                onFocus={() => speak(t(item.labelKey) || item.labelKey)}
                 onClick={() => {
                   if (window.innerWidth < 1024) toggleSidebar();
                 }}

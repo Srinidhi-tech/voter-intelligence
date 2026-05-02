@@ -47,6 +47,28 @@ export default function ComplaintGenerator() {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
+      // reCAPTCHA Enterprise Integration (Education Bypass if Key missing)
+      const siteKey = "6Ld_placeholder_key"; 
+      let token = "token_bypass";
+      
+      if (window.grecaptcha && window.grecaptcha.enterprise) {
+        token = await window.grecaptcha.enterprise.execute(siteKey, { action: 'complaint_submit' });
+      }
+
+      // 1. Verify reCAPTCHA on backend
+      const verifyRes = await fetch('/api/verify-recaptcha', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, siteKey })
+      });
+      const verifyData = await verifyRes.json();
+
+      if (!verifyData.success && verifyData.score < 0.3) {
+        alert('Bot behavior detected. Please try again.');
+        return;
+      }
+
+      // 2. Save Complaint to Firestore
       const response = await fetch('/api/complaints', {
         method: 'POST',
         headers: {
@@ -54,19 +76,22 @@ export default function ComplaintGenerator() {
         },
         body: JSON.stringify({
           ...formData,
-          letterContent
+          letterContent,
+          integrityScore: 100 // Default for manual complaints
         }),
       });
       
       if (response.ok) {
         setSubmitSuccess(true);
+        speak("Complaint saved successfully to the election integrity database.");
         setTimeout(() => setSubmitSuccess(false), 3000);
       } else {
-        alert('Failed to save complaint to database.');
+        const errData = await response.json();
+        alert(`Database Error: ${errData.error || 'Failed to save'}`);
       }
     } catch (error) {
       console.error('Error submitting complaint:', error);
-      alert('Error connecting to backend server.');
+      alert('Network Error: Could not connect to the election integrity service.');
     } finally {
       setIsSubmitting(false);
     }
