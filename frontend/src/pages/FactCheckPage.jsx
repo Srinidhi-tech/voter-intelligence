@@ -16,7 +16,7 @@ export default function FactCheckPage() {
     setIsSubmitting(true);
     setAnalysisResult(null);
     try {
-      const response = await fetch('http://localhost:5000/api/analyze-misinformation', {
+      const response = await fetch('/api/analyze-misinformation', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

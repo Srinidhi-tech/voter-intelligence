@@ -39,4 +39,21 @@ describe('Voter Intelligence Logic', () => {
     expect(result.isValid).toBe(false);
     expect(result.error).toBe('Candidate name too short');
   });
+
+  it('should reject empty data objects', () => {
+    const data = {};
+    const result = validateComplaintData(data);
+    expect(result.isValid).toBe(false);
+    expect(result.error).toBe('Missing required fields');
+  });
+
+  it('should validate correctly with special characters in location', () => {
+    const data = {
+      violationType: 'Bribery',
+      candidateName: 'John Doe',
+      location: 'Ward #5 (Near Square!)',
+    };
+    const result = validateComplaintData(data);
+    expect(result.isValid).toBe(true);
+  });
 });
